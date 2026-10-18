@@ -1,0 +1,21 @@
+[project]
+name = "relay"
+version = "0.1.0"
+description = "Graph crew for on-call decisions, shared agent memory, and a company brain. Built on FalkorDB."
+requires-python = ">=3.12"
+dependencies = [
+    "falkordb>=1.2.0",
+    "falkordblite>=0.10.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.uv]
+package = false

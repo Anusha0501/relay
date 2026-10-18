@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relay — the graph crew</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@380;500;600&family=Source+Serif+4:opsz,wght@8..60,520;8..60,640&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <p class="eyebrow">Graph Hacks · memory first</p>
+        <h1 class="wordmark">Relay</h1>
+      </div>
+    </div>
+    <p class="thesis">Three agents share one company graph. Memory changes who gets paged, and the next session can read the handoff after this process is gone.</p>
+    <div class="controls">
+      <label>Company
+        <select id="tenant"></select>
+      </label>
+      <span id="backend" class="pill">connecting</span>
+      <button id="reset" type="button">Reset graph</button>
+    </div>
+  </header>
+
+  <main class="board">
+    <section class="col" aria-label="Incident and questions">
+      <h2>Open incident</h2>
+      <div id="scenarios"></div>
+      <div class="actions">
+        <button id="run-memory" class="primary" type="button">Run the crew</button>
+        <button id="run-next" type="button">Next shift</button>
+        <button id="run-owner" type="button">Page the owner</button>
+      </div>
+      <p id="blurb" class="hint"></p>
+
+      <h2>Company brain</h2>
+      <div id="questions" class="questions"></div>
+      <div id="answer" class="answer"></div>
+    </section>
+
+    <section class="col decision" aria-live="polite">
+      <p class="kicker" id="kicker">No decision yet</p>
+      <h2 id="headline">The owner policy and the graph crew disagree.</h2>
+      <p id="summary" class="lede">Run the crew. It has to follow a prior incident to the cause, skip the runbook that failed, and write a handoff the next shift can read.</p>
+      <div id="contrast" class="contrast" hidden></div>
+      <ol id="path" class="path"></ol>
+      <div id="agents" class="agents"></div>
+      <div id="coord" class="coord"></div>
+      <div id="outcome-box" class="outcome" hidden>
+        <p>Write the outcome into episodic memory.</p>
+        <button type="button" data-result="success">It worked</button>
+        <button type="button" data-result="failed">It failed</button>
+        <p id="outcome-note" class="hint"></p>
+      </div>
+    </section>
+
+    <section class="col map" aria-label="Company graph">
+      <div class="map-head">
+        <h2>How the company connects</h2>
+        <span id="counts" class="pill"></span>
+      </div>
+      <canvas id="graph" width="720" height="460" aria-label="Service dependency graph"></canvas>
+      <div id="algos" class="algos"></div>
+      <ul id="roster" class="roster"></ul>
+    </section>
+  </main>
+
+  <section class="memory" aria-label="Agent memory">
+    <div class="memory-head">
+      <h2>Memory that survives the session</h2>
+      <p>Episodic, semantic, and procedural notes are nodes. Reset the server and they are still here.</p>
+    </div>
+    <div class="mem-grid">
+      <div>
+        <h3>Episodic</h3>
+        <ul id="mem-episodic"></ul>
+      </div>
+      <div>
+        <h3>Semantic</h3>
+        <ul id="mem-semantic"></ul>
+      </div>
+      <div>
+        <h3>Procedural</h3>
+        <ul id="mem-procedural"></ul>
+      </div>
+    </div>
+  </section>
+
+  <details class="cypher">
+    <summary>Cypher the decision depends on</summary>
+    <div id="cypher"></div>
+  </details>
+
+  <p id="error" class="error" role="alert" hidden></p>
+  <script src="/static/app.js"></script>
+</body>
+</html>
