@@ -1,6 +1,7 @@
 """The graph has to change the decision, and the next session has to see it."""
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -176,3 +177,46 @@ def test_company_brain_traces_work_and_decisions(graphs):
     assert "checkout-api" in blast_ids
     assert "ledger" in blast_ids
     assert "experiments-lab" not in blast_ids
+
+
+def test_concurrent_reads_and_writes_share_one_graph(graphs):
+    host = os.environ.get("FALKORDB_HOST", "").strip()
+    if not host:
+        pytest.skip("embedded FalkorDB is single-process; concurrency is the server path")
+    north, _bright = graphs
+    run_incident(north, "checkout-api", "latency_spike", "memory")
+    port = int(os.environ.get("FALKORDB_PORT", "6379"))
+
+    def client():
+        from falkordb import FalkorDB
+
+        return FalkorDB(host=host, port=port).select_graph("relay_northwind")
+
+    def read_handoff(_index):
+        rows = client().query(
+            "MATCH (h:Handoff {status:'open'})-[:ASSIGNS]->(p:Person) RETURN p.id"
+        ).result_set
+        assert rows and rows[0][0] == "jordan"
+
+    def write_note(index):
+        client().query(
+            """
+            CREATE (:Memory {
+                id: $id, kind: 'episodic', text: $text,
+                session_id: 'concurrent', created_at: $created_at
+            })
+            """,
+            {"id": f"mem-c-{index}", "text": f"note {index}", "created_at": index},
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(read_handoff, range(8)))
+        list(pool.map(write_note, range(8)))
+
+    stored = fetch(
+        north,
+        "MATCH (m:Memory {session_id:'concurrent'}) RETURN count(m)",
+        None,
+        ["count"],
+    )
+    assert stored[0]["count"] == 8

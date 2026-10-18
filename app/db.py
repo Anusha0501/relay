@@ -70,15 +70,26 @@ def tenant_graph(tenant: str):
     return get_db().select_graph(graph_name(tenant))
 
 
+def _execute(graph, cypher: str, params: dict | None):
+    try:
+        if params:
+            return graph.query(cypher, params)
+        return graph.query(cypher)
+    except Exception as exc:  # noqa: BLE001 — surface the failing query
+        raise RuntimeError(f"{exc}\n{cypher.strip()}") from exc
+
+
 def query(graph, cypher: str, params: dict | None = None):
-    """Run one Cypher query. A process-wide lock keeps the embedded server consistent."""
+    """Run one Cypher query.
+
+    The embedded runtime is single-process, so those calls take a lock.
+    A FalkorDB server is the concurrency path: readers and writers do not wait
+    on that lock.
+    """
+    if os.getenv("FALKORDB_HOST", "").strip():
+        return _execute(graph, cypher, params)
     with _lock:
-        try:
-            if params:
-                return graph.query(cypher, params)
-            return graph.query(cypher)
-        except Exception as exc:  # noqa: BLE001 — surface the failing query
-            raise RuntimeError(f"{exc}\n{cypher.strip()}") from exc
+        return _execute(graph, cypher, params)
 
 
 def convert(value):

@@ -98,7 +98,7 @@ docker compose up -d
 FALKORDB_HOST=localhost uv run pytest -q
 ```
 
-GitHub Actions runs the same tests against `falkordb/falkordb:latest`.
+GitHub Actions runs the same tests against `falkordb/falkordb:latest`, including concurrent reads of an open handoff and concurrent memory writes. The embedded runtime serializes queries. A FalkorDB server does not.
 
 ## API
 
