@@ -94,6 +94,7 @@ button.primary {
 }
 
 .thesis { margin: 0; color: var(--muted); max-width: 46rem; }
+.note { margin: 0.35rem 0 0; color: var(--amber); font-size: 0.85rem; }
 
 .controls { display: flex; gap: 0.6rem; align-items: end; }
 
@@ -165,6 +166,8 @@ h3 { margin: 0 0 0.4rem; font-size: 1rem; }
 }
 
 .lede { margin-top: 0; color: var(--muted); }
+
+[hidden] { display: none !important; }
 
 .contrast {
   display: grid;

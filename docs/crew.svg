@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 460" role="img" aria-labelledby="title desc">
+  <title id="title">Relay crew</title>
+  <desc id="desc">Archivist writes a recall, Cartographer writes an action, Liaison writes a handoff the next shift reads.</desc>
+  <rect width="1100" height="460" rx="18" fill="#12140e"/>
+  <text x="36" y="42" fill="#e6a85c" font-family="ui-monospace, monospace" font-size="13" letter-spacing="1.5">NORTHWIND · CHECKOUT LATENCY</text>
+  <text x="36" y="78" fill="#f3ecdf" font-family="Georgia, serif" font-size="32">Page Jordan. Do not restart payments.</text>
+  <g font-family="ui-sans-serif, sans-serif" font-size="14">
+    <rect x="36" y="108" width="320" height="150" rx="14" fill="#1b1e14" stroke="#6e433b"/>
+    <text x="56" y="138" fill="#efb2a4" font-family="ui-monospace, monospace" font-size="12">ON-CALL POLICY</text>
+    <text x="56" y="172" fill="#f3ecdf" font-size="22" font-family="Georgia, serif">Priya Shah</text>
+    <text x="56" y="200" fill="#b7b09f">Owns Checkout API</text>
+    <text x="56" y="224" fill="#b7b09f">Restart payments gateway</text>
+    <rect x="380" y="108" width="340" height="150" rx="14" fill="#1b1e14" stroke="#4d5c38"/>
+    <text x="400" y="138" fill="#d5e2b8" font-family="ui-monospace, monospace" font-size="12">GRAPH CREW</text>
+    <text x="400" y="172" fill="#f3ecdf" font-size="22" font-family="Georgia, serif">Jordan Lee</text>
+    <text x="400" y="200" fill="#b7b09f">Failed the primary over before</text>
+    <text x="400" y="224" fill="#b7b09f">Fail over to the replica</text>
+    <rect x="744" y="108" width="320" height="150" rx="14" fill="#1b1e14" stroke="#3a4030"/>
+    <text x="764" y="138" fill="#e6a85c" font-family="ui-monospace, monospace" font-size="12">NEXT SHIFT</text>
+    <text x="764" y="172" fill="#f3ecdf" font-size="22" font-family="Georgia, serif">Reads the handoff</text>
+    <text x="764" y="200" fill="#b7b09f">Same alert, new session</text>
+    <text x="764" y="224" fill="#b7b09f">Does not page Priya again</text>
+  </g>
+  <g font-family="ui-sans-serif, sans-serif" font-size="15" fill="#f3ecdf">
+    <rect x="36" y="290" width="220" height="64" rx="12" fill="#23281b" stroke="#3a4030"/>
+    <text x="146" y="328" text-anchor="middle">Archivist</text>
+    <rect x="300" y="290" width="150" height="64" rx="12" fill="#2a2418" stroke="#e6a85c"/>
+    <text x="375" y="328" text-anchor="middle" fill="#e6a85c">Recall</text>
+    <rect x="494" y="290" width="220" height="64" rx="12" fill="#23281b" stroke="#3a4030"/>
+    <text x="604" y="328" text-anchor="middle">Cartographer</text>
+    <rect x="758" y="290" width="150" height="64" rx="12" fill="#2a2418" stroke="#e6a85c"/>
+    <text x="833" y="328" text-anchor="middle" fill="#e6a85c">Action</text>
+    <rect x="36" y="372" width="220" height="64" rx="12" fill="#23281b" stroke="#3a4030"/>
+    <text x="146" y="410" text-anchor="middle">Liaison</text>
+    <rect x="300" y="372" width="220" height="64" rx="12" fill="#2a2418" stroke="#d5e2b8"/>
+    <text x="410" y="410" text-anchor="middle" fill="#d5e2b8">Handoff</text>
+  </g>
+  <g stroke="#59614c" stroke-width="1.5" fill="none">
+    <path d="M256 322 H300"/>
+    <path d="M450 322 H494"/>
+    <path d="M714 322 H758"/>
+    <path d="M146 354 V372"/>
+    <path d="M256 404 H300"/>
+  </g>
+</svg>

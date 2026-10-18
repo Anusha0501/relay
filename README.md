@@ -1,115 +1,125 @@
 # Relay
 
-On-call agents page the person who owns the alerting service and rerun the first runbook. That is often the wrong action. The right page depends on a prior incident, the procedure that failed, the service that actually caused it, and the person who has fixed that cause before.
+Three agents share one company graph. Memory changes who gets paged, and the next session reads the handoff after this process is gone.
 
-Relay is a three-agent crew whose shared context is a FalkorDB graph. Archivist writes memory. Cartographer reads that memory and chooses an action. Liaison reads the action and writes the handoff the next session will find. None of them pass the decision around in process memory.
+[![tests](https://github.com/Anusha0501/relay/actions/workflows/test.yml/badge.svg)](https://github.com/Anusha0501/relay/actions/workflows/test.yml)
 
-The lead track is **Agent Memory and Coordination**. The same run also enters **Agents That Act on Connected Data** and **Company Brain**.
+FalkorDB is the shared context. The Archivist writes recall. The Cartographer reads that recall and writes an action. The Liaison reads the action and writes a handoff. Nothing is passed between agents in process memory.
 
-## The decision you can demo
+<img src="docs/images/board.png" alt="Relay after a checkout latency spike. The crew pages Jordan Lee to fail over Postgres, and the graph shows the path from checkout to the replica." width="100%">
 
-Northwind Cloud. Checkout latency. Priya Shah is on call and owns Checkout API. The obvious action is to restart the payments gateway.
+## The wrong page
 
-The graph says otherwise:
+Checkout p95 crosses four seconds. The roster says page Priya Shah, the on-call owner of Checkout API. Her runbook restarts Payments gateway.
 
-1. INC-1042 had the same symptom, and restarting payments failed.
-2. The postmortem cause was the Postgres primary, not the gateway.
-3. INC-998 recovered that primary by failing over to the replica. Jordan Lee did it.
-4. Riley Chen also knows the primary, but has not done the failover.
+That restart already failed. Incident 1042 was caused by Postgres primary, and the person who failed it over last time was Jordan Lee. Riley Chen also knows the database and has never done the failover. Relay pages Jordan, records the sources, and leaves a handoff the next shift can read.
 
-The crew assigns Jordan to fail over. The next shift reads that handoff from FalkorDB and continues it. If the failover is recorded as a failure, the next crew refuses to repeat it and picks the next unblocked procedure.
+```mermaid
+flowchart LR
+  A[Archivist] -->|writes| R[(Recall)]
+  R -->|must read| C[Cartographer]
+  C -->|writes| X[(Action)]
+  X -->|must read| L[Liaison]
+  L -->|writes| H[(Handoff)]
+```
 
-Brightpath is a second company in its own graph. Maya is on call there. The crew pages Noah instead, and it cannot see Northwind's people or handoffs.
+<img src="docs/crew.svg" alt="Priya is on call. The graph pages Jordan. The next shift reads the handoff." width="100%">
 
-## Agents
+<details>
+<summary>What each agent is allowed to see</summary>
 
-| Agent | Writes | Reads | Track |
-| --- | --- | --- | --- |
-| Archivist | Recall, episodic, semantic, and procedural Memory | Episodes, attempts, open handoffs | Memory and coordination |
-| Cartographer | Action | The Recall node, then procedures, blast radius, PageRank, betweenness, components, shortest path | Act on connected data |
-| Liaison | Handoff | The Action node, owners, and the source document | Company brain |
+| Agent | Reads | Writes |
+| --- | --- | --- |
+| Archivist | prior episodes, failed attempts, open handoffs | `Recall`, episodic, semantic, and procedural memory |
+| Cartographer | the `Recall` for this session | `Action` |
+| Liaison | the `Action` for this session | `Handoff`, with the decision sources attached |
 
-Cartographer will not run if the Recall node is missing. Liaison assigns whoever the Action node names, even if that name was written by a different process. That is the coordination test.
+The Cartographer query starts with `MATCH (recall:Recall {session_id})`. If that node is missing, the agent stops. The Liaison does the same with `Action`.
 
-## Graph model
-
-Two FalkorDB graphs, `relay_northwind` and `relay_brightpath`. One instance, isolated tenants.
-
-Nodes: `Person`, `Team`, `Service`, `Project`, `Procedure`, `Episode`, `Attempt`, `Document`, `Decision`, `Agent`, `Memory`, `Recall`, `Action`, `Handoff`.
-
-Relationships the decisions use:
-
-- `(Person)-[:OWNS|KNOWS|WORKED_ON]->`
-- `(Person)-[:WORKED_ON]->(Project)-[:USES]->(Service)`
-- `(Service)-[:DEPENDS_ON {dist}]->(Service)`
-- `(Service)-[:ROUTES_TO {dist}]->(Service)`
-- `(Episode)-[:AFFECTED]->(Service)` and `(Episode)-[:CAUSED_BY]->(Service)`
-- `(Episode)-[:ATTEMPTED]->(Attempt)-[:USED]->(Procedure)`
-- `(Attempt)-[:BY]->(Person)` and `(Attempt)-[:ON]->(Service)`
-- `(Decision)-[:ABOUT]->(Episode)`, `[:DECIDED_BY]->(Person)`, `[:SOURCED_FROM]->(Document)`
-- `(Handoff)-[:ABOUT]->(Service)`, `[:ASSIGNS]->(Person)`, `[:RECOMMENDS]->(Procedure)`
-- `(Agent)-[:WROTE|READ {session_id}]->` the shared nodes
-
-Annotated queries: [cypher/queries.cypher](cypher/queries.cypher). The strings the app executes: [app/cypher_book.py](app/cypher_book.py).
-
-Algorithms, called as tools and ignored if a build does not ship them:
-
-- `algo.pageRank` on `Service` / `DEPENDS_ON`
-- `algo.betweenness` on the same topology
-- `algo.WCC` to show isolated services are outside the blast
-- `shortestPath` over `DEPENDS_ON` and `ROUTES_TO`
+</details>
 
 ## Run it
 
-FalkorDB is the database. Docker is the runtime that works everywhere, including Intel Macs. The FalkorDBLite wheel currently ships an arm64 `redis-server`, so an Intel Mac cannot use the embedded fallback.
+Docker, Python 3.12, and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 docker compose up -d
-uv sync --all-groups --python 3.12
+uv sync
 FALKORDB_HOST=localhost uv run uvicorn app.main:app --host 127.0.0.1 --port 8080
 ```
 
-Open http://127.0.0.1:8080. FalkorDB Browser is on http://localhost:3000.
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
-On Apple Silicon, without Docker:
+1. **Run the crew.** Jordan Lee, fail over to the replica. Priya stays on the roster.
+2. **Next shift.** A new session continues the open handoff.
+3. **Page the owner.** The contrast case. It restarts Payments and writes nothing.
+4. Mark the failover **failed**. The next crew blocks that procedure and promotes the read replica instead. The assignee stays Jordan.
+5. Switch the company to **brightpath**. Maya Chen owns Search. The crew pages Noah Williams to roll back the ranking model.
 
-```bash
-uv sync --all-groups --python 3.12
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8080
-```
-
-That path starts FalkorDBLite and stores the graphs in `data/relay.db`.
-
-### Demo
-
-1. Stay on Northwind. Read the incident: the roster would page Priya.
-2. **Run the crew.** The decision is Jordan Lee, fail over to the replica. The contrast card is the owner policy.
-3. **Next shift.** The same alert continues the open handoff. The kicker says the shift read it from the graph.
-4. **It failed**, then **Next shift**. Failover is blocked. The crew picks "Promote read replica" and still does not page Priya.
-5. Switch the company to Brightpath and run the crew. Noah, not Maya. No Northwind names.
-6. Ask "Who has worked on this system?" and "Where did this decision come from?"
-
-Reset graph restores the seed.
-
-### Tests
+FalkorDB Browser is on port 3000. The graphs are `relay_northwind` and `relay_brightpath`.
 
 ```bash
-docker compose up -d
 FALKORDB_HOST=localhost uv run pytest -q
 ```
 
-GitHub Actions runs the same tests against `falkordb/falkordb:latest`, including concurrent reads of an open handoff and concurrent memory writes. The embedded runtime serializes queries. A FalkorDB server does not.
+On Apple Silicon, omit `FALKORDB_HOST`. The app uses embedded FalkorDBLite and stores the graph in `data/relay.db`.
+
+## Graph
+
+Two tenants, one schema. A node never crosses from Northwind into Brightpath.
+
+```mermaid
+flowchart LR
+  Person -->|OWNS / KNOWS| Service
+  Person -->|MEMBER_OF| Team
+  Service -->|DEPENDS_ON / ROUTES_TO| Service
+  Episode -->|AFFECTED / CAUSED_BY| Service
+  Episode -->|ATTEMPTED| Attempt
+  Attempt -->|USED| Procedure
+  Attempt -->|BY| Person
+  Decision -->|ABOUT| Episode
+  Decision -->|SOURCED_FROM| Document
+  Session -->|CONTINUED_FROM| Handoff
+```
+
+<details>
+<summary>Labels</summary>
+
+`Person`, `Team`, `Service`, `Procedure`, `Episode`, `Attempt`, `Decision`, `Document`, `Session`, `Recall`, `Memory`, `Action`, `Handoff`, `Meta`.
+
+</details>
+
+<details>
+<summary>How the crew chooses</summary>
+
+1. An open handoff wins when its procedure is not blocked and the person is available.
+2. Otherwise, a successful attempt on the suspected cause, excluding blocked procedures.
+3. Otherwise, the lowest-ranked procedure on that cause that is not blocked.
+4. The assignee is someone who has done it, then an available person who knows the service. Jordan comes before Riley.
+
+PageRank, betweenness, weakly connected components, and shortest path are computed on the service graph. If an algorithm call fails, the crew falls back and the page does not change.
+
+The queries are in [`cypher/queries.cypher`](cypher/queries.cypher) and served at `GET /api/cypher`.
+
+</details>
 
 ## API
 
-- `GET /api/health`
-- `GET /api/tenants/{tenant}`
-- `POST /api/tenants/{tenant}/incidents` with `{service, symptom, policy}` where policy is `memory` or `owner`
-- `POST /api/tenants/{tenant}/sessions/{session_id}/outcome` with `{result: success|failed, note}`
-- `POST /api/tenants/{tenant}/ask` with `{question, service}`
-- `GET /api/tenants/{tenant}/graph`
-- `GET /api/tenants/{tenant}/memory`
-- `POST /api/tenants/{tenant}/reset`
-- `GET /api/cypher`
+| Method | Path | Body |
+| --- | --- | --- |
+| `GET` | `/api/health` | |
+| `GET` | `/api/cypher` | |
+| `POST` | `/api/tenants/{tenant}/reset` | |
+| `GET` | `/api/tenants/{tenant}/graph` | |
+| `GET` | `/api/tenants/{tenant}/memory` | |
+| `POST` | `/api/tenants/{tenant}/incidents` | `{service, symptom, policy}` |
+| `POST` | `/api/tenants/{tenant}/sessions/{id}/outcome` | `{result, note}` |
+| `POST` | `/api/tenants/{tenant}/ask` | `{question, service}` |
 
-Tenant ids are limited to the seeded companies. Queries are parameterized.
+`policy` is `memory` or `owner`. Questions: `who_knows`, `who_worked`, `blast`, `last_time`, `decision`, `ownership`.
+
+## Tracks
+
+- **Agent Memory and Coordination.** Recall, action, and handoff are graph nodes. The next session continues the handoff.
+- **Agents That Act on Connected Data.** Cause, blast radius, and shortest path decide the action.
+- **Company Brain.** Who knows a service, who has worked it, and which document a decision came from.

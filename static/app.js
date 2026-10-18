@@ -25,6 +25,9 @@ function showError(error) {
 async function boot() {
   const health = await api("/api/health");
   $("backend").textContent = health.backend;
+  const note = $("note");
+  note.hidden = !health.note;
+  note.textContent = health.note || "";
   const select = $("tenant");
   select.innerHTML = "";
   health.tenants.forEach((tenant) => {
@@ -215,7 +218,9 @@ async function ask(question) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: question.id, service }),
     });
-    const lines = result.rows.length ? result.rows.map((row) => JSON.stringify(row)).join("\n") : "No matching path.";
+    const lines = result.rows.length
+      ? result.rows.map((row) => Object.values(row).flat().filter((value) => value !== null && value !== "").join(" · ")).join("\n")
+      : "No matching path.";
     $("answer").textContent = `${result.title}\n${lines}`;
   } catch (error) {
     showError(error);
@@ -277,8 +282,28 @@ function drawGraph(result) {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = picked ? "#f3ecdf" : "#b7b09f";
-    ctx.font = "12px Outfit, sans-serif";
-    ctx.fillText(node.name, x + 10, y + 4);
+    ctx.font = "11px Outfit, sans-serif";
+    ctx.textAlign = "center";
+    const short = {
+      storefront: "Storefront",
+      "billing-api": "Billing",
+      notifications: "Notify",
+      "checkout-api": "Checkout",
+      "payments-gateway": "Payments",
+      "fraud-service": "Fraud",
+      "redis-cache": "Redis",
+      ledger: "Ledger",
+      "postgres-primary": "Primary",
+      "postgres-replica": "Replica",
+      "experiments-lab": "Lab",
+      "shop-web": "Shop",
+      "search-api": "Search",
+      "ranking-model": "Ranker",
+      elastic: "Elastic",
+      ingest: "Ingest",
+      "sandbox-lab": "Lab",
+    };
+    ctx.fillText(short[node.id] || node.name, x, y + 18);
   });
 }
 
